@@ -8,46 +8,34 @@ import javax.swing.table.*;
 public class Dispatcher extends javax.swing.JFrame {
 
     private static int pidCounter;
-
-    // ** add a 'where we are int' to simulate level of file system
-    private int level = 0; // 0-5, or really 0 - 2ish bc who has the time
+    // ** add a 'where we are int' to simulate LL
+    private int llp = 0;
     //
-    private int fi = 0; // file indicator
-    private int di = 0; // directory indicator
-
-    private ArrayList<FileSystem> ready; // maybe can have three one for a,b,and c
-    private ArrayList<FileSystem> blocked; // may not need these to be array lists
-    // private ArrayList<FileSystem> C; // the drives managed from here
-    private FileSystem running;
-    private FileSystem Adrive;
-    private FileSystem Bdrive;
-    private FileSystem Cdrive;
+    private ArrayList<Process> ready;
+    private ArrayList<Process> blocked;
+    private Process running;
 
     public Dispatcher() {
         initComponents();
-        pidCounter = 10;
+        pidCounter = 10; // ** fine for last, but maybe change to demonstrate mem slots?
         ready = new ArrayList<>();
         blocked = new ArrayList<>();
-        running = new FileSystem(pidCounter, 30, Drive.A);
-        // what we wanna do is set up one arraylist with three FileSystem, or instantaite running with one FS
-        // we could even populate the FS's here
-        Adrive = new FileSystem(Drive.A);
-
-        Bdrive = new FileSystem(Drive.B);
-
-        Cdrive = new FileSystem(Drive.C);
-
-
-
+        // ** swap out this next for initializing it to 1000 mem: pid at 10 is fine, mem = prio
+        pidCounter--; // ** make our unused task 9
+        //running = new Process(pidCounter, 1337, ProcessStatus.BLOCKED); // outside of init, hardcoded
+        pidCounter++; // start ready/memory list with mem
+        ready.add(0, new Process(pidCounter, 1000, ProcessStatus.FREE)); // status "FREE"
         ++pidCounter;
-        initialSet();
+        //--** testing
+        //initialSet(); // ** maybe could still have an implementation of this
+        //--
         drawTable();
     }
 
 
     @SuppressWarnings("unchecked")
 
-    private void initComponents() {
+    private void initComponents() { // seem 'global' in relation to program
 
         mySeperator = new javax.swing.JSeparator();
         addproc = new javax.swing.JButton();
@@ -55,12 +43,12 @@ public class Dispatcher extends javax.swing.JFrame {
         scroller = new javax.swing.JScrollPane();
         firstTable = new javax.swing.JTable();
         controlArea = new javax.swing.JLabel();
-        processBlock = new javax.swing.JButton();
-        processUnblock = new javax.swing.JButton();
+        //processBlock = new javax.swing.JButton();
+        //processUnblock = new javax.swing.JButton();
         processKill = new javax.swing.JButton();
-        endAll = new javax.swing.JButton();
+        //endAll = new javax.swing.JButton();
         inputPriority = new javax.swing.JTextField();
-        reset = new javax.swing.JButton();
+        //reset = new javax.swing.JButton();
         exit = new javax.swing.JButton();
         labelBig = new javax.swing.JLabel();
         timeExceeded = new javax.swing.JButton();
@@ -74,14 +62,14 @@ public class Dispatcher extends javax.swing.JFrame {
             }
         });
 
-        procLabel.setText("Add File");
+        procLabel.setText("Add Process");
 
         firstTable.setModel(new javax.swing.table.DefaultTableModel(
                 new Object [][] { // 2d array
 
                 },
                 new String [] {  // heading and define length of first array
-                        "Current Directory Contents", "FS actual Drive", ""
+                        "Process ID", "Memory", "Status"
                 }
         ) {
             boolean[] canEdit = new boolean [] {
@@ -101,50 +89,51 @@ public class Dispatcher extends javax.swing.JFrame {
 
         controlArea.setText("Control Panel");
 
-        processBlock.setText("Print File");//Block Selected"); //
-        processBlock.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                blockProcessButtonPress(evt);
-            }
-        });
+        //processBlock.setText("Block Selected");
+        //processBlock.addActionListener(new java.awt.event.ActionListener() {
+        //    public void actionPerformed(java.awt.event.ActionEvent evt) {
+        //        blockProcessButtonPress(evt);
+        //    }
+        //});
 
-        timeExceeded.setText("--------"); // "time exceeded"
+        timeExceeded.setText("Collect Garbage");
         timeExceeded.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 timeSliceExceededButtonPress(evt);
             }
         });
 
-
-        processUnblock.setText("Enter Dir");//"Unblock Selected"); //
+        /*
+        processUnblock.setText("Unblock Selected");
         processUnblock.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 unblockProcessButtonPress(evt);
             }
-        });
+        }); */
 
-        processKill.setText("Delete File");
+        processKill.setText("Kill Selected");
         processKill.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 killProcessButtonPress(evt);
             }
         });
-
-        endAll.setText("reset");
+        /*
+        endAll.setText("Kill All");
         endAll.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 killsAllButtonPress(evt);
             }
-        });
+        });*/
 
-        inputPriority.setText("File Contents");
+        inputPriority.setText("Memory Request as Integer"); // ** took out directions for easier testing
 
-        reset.setText("Parent Dir");//"Reset"); //
+        /*
+        reset.setText("Reset");
         reset.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 resetButtonPress(evt);
             }
-        });
+        });*/
 
         exit.setText("Exit");
         exit.addActionListener(new java.awt.event.ActionListener() {
@@ -153,7 +142,7 @@ public class Dispatcher extends javax.swing.JFrame {
             }
         });
 
-        labelBig.setText("FS and VFS");
+        labelBig.setText("First Fist Memory Management System, with Garbage Collection");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -176,8 +165,8 @@ public class Dispatcher extends javax.swing.JFrame {
                                                                         .addComponent(labelBig))
                                                                 .addGap(170, 170, 170)
                                                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)//processBlock next line
-                                                                        .addComponent(processBlock, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                                                        .addComponent(processUnblock, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                                                                        //.addComponent(processBlock, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                                                        ))//.addComponent(processUnblock, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                                                         .addGroup(layout.createSequentialGroup()
                                                                 .addGap(48, 48, 48)
                                                                 .addComponent(procLabel)))
@@ -188,9 +177,9 @@ public class Dispatcher extends javax.swing.JFrame {
                                                                 .addGroup(layout.createSequentialGroup()
                                                                         .addComponent(processKill, javax.swing.GroupLayout.PREFERRED_SIZE, 129, javax.swing.GroupLayout.PREFERRED_SIZE)
                                                                         .addGap(18, 18, 18)
-                                                                        .addComponent(reset, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                                                        )//.addComponent(reset, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                                                                 .addGroup(layout.createSequentialGroup()
-                                                                        .addComponent(endAll, javax.swing.GroupLayout.PREFERRED_SIZE, 129, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                                        //.addComponent(endAll, javax.swing.GroupLayout.PREFERRED_SIZE, 129, javax.swing.GroupLayout.PREFERRED_SIZE)
                                                                         .addComponent(timeExceeded, javax.swing.GroupLayout.PREFERRED_SIZE, 129, javax.swing.GroupLayout.PREFERRED_SIZE)
                                                                         .addGap(18, 18, 18)
                                                                         .addComponent(exit, javax.swing.GroupLayout.PREFERRED_SIZE, 129, javax.swing.GroupLayout.PREFERRED_SIZE))))))
@@ -210,9 +199,9 @@ public class Dispatcher extends javax.swing.JFrame {
                                                 .addComponent(controlArea)
                                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                                        .addComponent(processBlock)
+                                                        //.addComponent(processBlock)
                                                         .addComponent(processKill)
-                                                        .addComponent(reset)))
+                                                        ))//.addComponent(reset)))
                                         .addGroup(layout.createSequentialGroup()
                                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                                 .addComponent(procLabel)
@@ -224,9 +213,9 @@ public class Dispatcher extends javax.swing.JFrame {
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                         .addGroup(layout.createSequentialGroup()
                                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                                        .addComponent(processUnblock)
+                                                        //.addComponent(processUnblock)
                                                         .addComponent(timeExceeded)
-                                                        .addComponent(endAll)
+                                                        //.addComponent(endAll)
                                                         .addComponent(exit))
                                                 .addGap(11, 11, 11))
                                         .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
@@ -237,7 +226,7 @@ public class Dispatcher extends javax.swing.JFrame {
         pack();
     }
     // Kills all processes.
-
+    // ** <<<<<<
     private void killsAllButtonPress(java.awt.event.ActionEvent evt) { // maybe keep as a start over button
         ready.clear(); // ** could be repurposed as garb collector -- gutted --
         blocked.clear();
@@ -251,25 +240,39 @@ public class Dispatcher extends javax.swing.JFrame {
     // Kills the selected Process (That is, the process currently highlighted on the table).
     // ** can be repurposed to deallocate memory, can we change pid to some null value
     private void killProcessButtonPress(java.awt.event.ActionEvent evt) { //seems mostly ok
-        DefaultTableModel model = (DefaultTableModel) this.firstTable.getModel();
+        DefaultTableModel model = (DefaultTableModel) this.firstTable.getModel(); //** needed
         int row = firstTable.getSelectedRow();
-        Vector rowData = (Vector)model.getDataVector().elementAt(row);
-        final int targetPid = (int)rowData.elementAt(0); // ** pid can be memory or still process ID
+
+        Vector rowData = (Vector)model.getDataVector().elementAt(row); // used to be final
+        int targetPid = (int)rowData.elementAt(0); // ** pid can be memory or still process ID
         // ** (int)rowData.elementAt(0) will give the status bit which we are looking for
-        Drive d = (Drive)rowData.elementAt(2);
-        model.removeRow(row); // this is where we might make diff
-                              // could not remove it, and instead just change
+        ProcessStatus status = (ProcessStatus)rowData.elementAt(2);
+        for (Process p : ready) { // fun other way to iterate through
+            if(p.getPid() == targetPid){
+                p.setStatus(ProcessStatus.FREE);
+                p.setPid(0);
+
+                //ready.remove(p);
+                break;
+            }
+        }
+        reDrawTable();
+
+        //model.removeRow(row); // ** this is where we might make diff
+
+        // ** could not remove it, and instead just change status
 
         //Remove the process from ArrayList
-        switch(d){ // **  probabaly can get rid of any row altering logic, or use this as part of garbo
-            case A:
+        /* //byebye for now
+        switch(status){ // **  probabaly can get rid of any row altering logic, or use this as part of garbo
+            case FREE:
                 running = null;
                 running = contextSwitch();
                 reDrawTable();
                 break;
 
-            case B:
-                for (FileSystem p : ready) {
+            case TAKEN: // ** useful
+                for (Process p : ready) {
                     if(p.getPid() == targetPid){
                         ready.remove(p);
                         break;
@@ -277,8 +280,8 @@ public class Dispatcher extends javax.swing.JFrame {
                 }
                 break;
 
-            case C:
-                for (FileSystem p : blocked) {
+            case BLOCKED:
+                for (Process p : blocked) {
                     if(p.getPid() == targetPid){
                         blocked.remove(p);
                         break;
@@ -289,34 +292,60 @@ public class Dispatcher extends javax.swing.JFrame {
             default:
                 System.err.println("Invalid status");
                 break;
-        }
+        }     */
     }
 
     // Adds a Process, given a priority, to the ready ArrayList.
     // ** this is changed to ask for memory
-
+    // ** >>>>> add place
     private void addProcessButtonPress(java.awt.event.ActionEvent evt) {
 
-        if(isInteger(inputPriority.getText(),10)){
+        if(isInteger(inputPriority.getText(),10)){ // ** 10 size of buffer
             int getPriority = Integer.parseInt(inputPriority.getText());
-            if(getPriority >= 0){
-                // ** that's a one line solution, we might need more
-                // ** this is where
-                if(running == null)
-                    running = new FileSystem(pidCounter,getPriority,Drive.A);
-                else ready.add(new FileSystem(pidCounter,getPriority,Drive.B));
-                ++pidCounter;
+            //**get the resources needed
+            DefaultTableModel model = (DefaultTableModel) firstTable.getModel();
+            firstTable.setModel(model); // ** may not need
+
+            if(getPriority > 0){
+                if(running == null) // ** new one shouldn't ever be null, but leaving this for now
+                    running = new Process(pidCounter,getPriority,ProcessStatus.FREE); //** never here now
+                // ** default everything to ready when we add it, that has 1 to 1 with 'taken mem'
+
+                else {
+                  // ** check if there is space by ff (loop)
+                  if(isThereSpace(ready, getPriority)){
+                    addMem(getPriority);
+                    ++pidCounter;
+                  }
+                  else {
+                    dothegarb();
+                    if(isThereSpace(ready, getPriority)){
+                      addMem(getPriority);
+                      ++pidCounter;
+                    }
+                    else{
+                      JOptionPane.showMessageDialog(null, "There isn't a big enough memory slot, even after garbage collection.");
+                    }
+                    // ** message
+                    // ** really we need to garbo compact and check again
+                    //JOptionPane.showMessageDialog(null, "There isn't a big enough memory slot.");
+
+                  }
+                }
+
+
                 reDrawTable();
             }
-            else JOptionPane.showMessageDialog(null, "Please enter a positive integer value.");
+            else JOptionPane.showMessageDialog(null, "Please enter a positive integer value greater than 0.");
         } // ** these effectively deal with bad input, as they exlude non integer and negatives
 
         else JOptionPane.showMessageDialog(null, "Please enter an integer value.");
     }
 
     // Resets the program to its initial state.
-
+    // ** probably need to take this out or modify it, reset needs to wipe memory if modifying
     private void resetButtonPress(java.awt.event.ActionEvent evt) {
+        // ** this is state of table when initial set is called
         ready.clear();
         blocked.clear();
         running = null;
@@ -325,13 +354,14 @@ public class Dispatcher extends javax.swing.JFrame {
         pidCounter = 10;
         ready = new ArrayList<>();
         blocked = new ArrayList<>();
-        running = new FileSystem(pidCounter, 30, Drive.A);
+        running = new Process(pidCounter, 1000, ProcessStatus.FREE); // this is oitside of init
         ++pidCounter;
-        initialSet();
+        initialSet(); // ** should comment this out too
         drawTable();
     }
 
     // Exits the program.
+    // ** can keep, but is useless
 
     private void exitButtonPress(java.awt.event.ActionEvent evt) {
         System.exit(0);
@@ -339,54 +369,140 @@ public class Dispatcher extends javax.swing.JFrame {
 
 
     // time exceed context switch
+    // ** think this is useless, this juggles the two highest priority processses
+    // ** which i don't think has a one to one parallel with ff memory mangagement
+    // ** <<<<<<
     private void timeSliceExceededButtonPress(java.awt.event.ActionEvent evt) {
-        running = contextSwitch2();
+        int skip = 0;
+        for (int i = 0; i < ready.size(); i++){ // this increments everything in list rn
+          if (ready.get(llp).getStatus() == ProcessStatus.FREE){
+            skip = garbageCollectInThisSpot();
+            i += skip;
+          }
+          modInc(); // ** took out else, in off chance that was wrong descision
+        }
+        //running = contextSwitch2(); // ** just call the garbage man on it
         reDrawTable();
     }
 
+    //smaller garbofunc
+
+    private void dothegarb(){
+      int skip = 0;
+      for (int i = 0; i < ready.size(); i++){ // this increments everything in list rn
+        if (ready.get(llp).getStatus() == ProcessStatus.FREE){
+          skip = garbageCollectInThisSpot();
+          i += skip;
+        }
+        modInc(); // ** took out else, in off chance that was wrong descision
+      }
+      //running = contextSwitch2(); // ** just call the garbage man on it
+      reDrawTable();
+    }
+
+
+
+    private int garbageCollectInThisSpot(){
+      // ** big if statement incoming
+      if (ready.size() <= 1) return 0; //add message?
+      if (llp == 0){
+        // ** at the beginning, check here and next in line
+        if (ready.get(llp).getStatus() == ProcessStatus.FREE && ready.get(llp + 1).getStatus() == ProcessStatus.FREE){
+          //System.out.println("what does it add to, first 2");
+          //combine
+          ready.get(llp).setMem(ready.get(llp).getMem() + ready.get(llp + 1).getMem()); //get process and mutate it
+
+          ready.remove(llp+1); // with +1 and +0 result same
+          return 1;
+        }
+      }
+      else if (llp == ready.size() - 1){ // this one works properly
+        //System.out.println("2nd if");
+        // ** at the end, check here and the one before
+        if (ready.get(llp).getStatus() == ProcessStatus.FREE && ready.get(llp - 1).getStatus() == ProcessStatus.FREE){
+          //combine
+          //System.out.println("2nd if shouldnt get here at first");
+          ready.get(llp).setMem(ready.get(llp).getMem() + ready.get(llp - 1).getMem()); //get process and mutate it
+          //get rid of other
+          ready.remove(llp + 1);// ready.remove pics as if 1 indecied
+          //llp--;
+          return 1;
+        }
+      }
+      else {
+        //System.out.println("last else");
+        //** check all three, it can still be two sets of two so more ifs to come
+        if (ready.get(llp).getStatus() == ProcessStatus.FREE &&
+          ready.get(llp - 1).getStatus() == ProcessStatus.FREE &&
+          ready.get(llp + 1).getStatus() == ProcessStatus.FREE){
+            // all 3 ready to be merged
+          ready.get(llp).setMem(ready.get(llp).getMem() + ready.get(llp - 1).getMem() + ready.get(llp + 1).getMem());
+          //System.out.println("removed 3");
+          // destory the + and - 1's
+          ready.remove(llp+1);
+          ready.remove(llp-1); //
+
+          llp--;
+          return 2;
+        }
+        else if(ready.get(llp).getStatus() == ProcessStatus.FREE && ready.get(llp + 1).getStatus() == ProcessStatus.FREE){
+          ready.get(llp).setMem(ready.get(llp).getMem() + ready.get(llp + 1).getMem()); // destroy next
+          ready.remove(ready.get(llp + 2)); // added one to all ready remove
+          return 1;
+        }
+        else if (ready.get(llp).getStatus() == ProcessStatus.FREE && ready.get(llp - 1).getStatus() == ProcessStatus.FREE){
+          ready.get(llp).setMem(ready.get(llp).getMem() + ready.get(llp - 1).getMem()); // destroy prev
+          ready.remove(llp-1); // aaahhhhhhhhhh soooo many
+          llp--;
+          return 1;
+        }
+        else return 0;
+      }
+
+      return 0;
+    }
     // Blocks the selected process.
+    // ** for this there will be no difference between block and kill
 
-    private void blockProcessButtonPress(java.awt.event.ActionEvent evt) { //......
-
-        JOptionPane.showMessageDialog(null, Adrive.getFile(0));
-        /*
+    private void blockProcessButtonPress(java.awt.event.ActionEvent evt) {
         DefaultTableModel model = (DefaultTableModel) this.firstTable.getModel();
         int row = firstTable.getSelectedRow();
         Vector rowData = (Vector)model.getDataVector().elementAt(row);
 
-
         //If blocking the running process, simply context switch
-        if((Drive)rowData.elementAt(2) == Drive.A){
+        if((ProcessStatus)rowData.elementAt(2) == ProcessStatus.FREE){
             running = contextSwitch();
         }
 
         //Otherwise move the selected process to the blocked list
         else{
             int targetPid = (int)rowData.elementAt(0);
-            for (FileSystem p : ready) {
+            for (Process p : ready) {
                 if(p.getPid() == targetPid){
-                    p.setDrive(Drive.C);
+                    p.setStatus(ProcessStatus.BLOCKED);
                     blocked.add(p);
                     ready.remove(p);
                     break;
                 }
             }
         }
-        reDrawTable(); */
+        reDrawTable();
     }
 
     //Resumes the currently selected blocked process.
+    // ** I don't think there is any point to "Un" Deallocating memory
+    // ** so I'll throw this out or comment out
 
     private void unblockProcessButtonPress(java.awt.event.ActionEvent evt) {
         DefaultTableModel model = (DefaultTableModel) this.firstTable.getModel();
         int row = firstTable.getSelectedRow();
         Vector rowData = (Vector)model.getDataVector().elementAt(row);
 
-        if((Drive)rowData.elementAt(2) == Drive.C){
+        if((ProcessStatus)rowData.elementAt(2) == ProcessStatus.BLOCKED){
             int targetPid = (int)rowData.elementAt(0);
-            for (FileSystem p : blocked) {
+            for (Process p : blocked) {
                 if(p.getPid() == targetPid){
-                    p.setDrive(Drive.B);
+                    p.setStatus(ProcessStatus.TAKEN);
                     ready.add(p);
                     blocked.remove(p);
                     break;
@@ -397,6 +513,7 @@ public class Dispatcher extends javax.swing.JFrame {
             running = contextSwitch();
         reDrawTable();
     }
+
     public static void main(String args[]) {
 
         try {
@@ -422,96 +539,106 @@ public class Dispatcher extends javax.swing.JFrame {
             new Dispatcher().setVisible(true);
         });
     }
+    //** wearehere changed to llp (linklistpointer) for length purposes
+    // ** added to check if there is any space in the 'ready list hijacked to hold the memory'
+    public boolean isThereSpace(ArrayList<Process> processes, int spaceRequested){
 
-    // Populate table with a set of processes
-    //>>>>>>> this is where we need to really work on
-
-    public void populateTable(ArrayList<FileSystem> processes){
-        DefaultTableModel model = (DefaultTableModel) firstTable.getModel();
-        firstTable.setModel(model);
-        // we need to know if we have to do all three of the drives, are we TLD - level == 0
-        // switch(level){}
-        // need arraylist of files and arraylist of FS's
-        processes.stream().map((process) -> { // need to do this twice, this is the directories one
-            Object[] row = new Object[2];
-            row[0] = "Directory_" + String.valueOf(di);// process.getPid // strings work
-            di++;
-
-            //if(process.getDrive() == Drive.C)
-            //    row[1] = -1;
-            // again, we care not about priority, we want this to be F1,F2,D1,D2 etc
-            //else row[1] = process.getPriority();
-
-
-            row[1] = process.getDrive();
-            return row;
-        }).forEachOrdered((row) -> {
-            model.addRow(row);
-        });
-
-        di = 0;
-        fi = 0;
+      for (int i = 0; i < processes.size(); i++){ // this increments everything in list rn
+        if (processes.get(llp).getStatus() == ProcessStatus.FREE){
+          //System.out.println("the status was free");
+          //System.out.println(String.valueOf(spaceRequested));
+          //System.out.println(String.valueOf(ready.get(llp).getMem()));
+          if (ready.get(llp).getMem() >= spaceRequested){
+            //System.out.println("did i get here and somehow not add mem?");
+            return true;
+          }
+        }
+        modInc(); // ** took out else, in off chance that was wrong descision
+      } // ** false alarm, this works, incrementing all including one just added
+      return false; //** for now
     }
 
+    // ** need an easier way to think about modular llp incrementing
+    public void modInc(){
+      if (llp == ready.size() - 1){
+        llp = 0; // i think maybe -1 for ready.size
+      }
+      else {
+        llp++; // llp has to have been modified at this point
+      }
+    }
 
-    public void populateTableFiles(ArrayList<String> files, Drive d){
+    //** antoher timesaver, only call after calling isThereSpace
+    public void addMem(int m){
+
+      int holder = ready.get(llp).getMem(); // ** old mem slot number, subtract from this
+      int newM = holder - m;
+      if (newM == 0){
+        ready.get(llp).setStatus(ProcessStatus.TAKEN);
+        ready.get(llp).setPid(pidCounter);
+      }
+      else{
+        ready.get(llp).setMem(newM);
+        ready.add(llp, new Process(pidCounter,m,ProcessStatus.TAKEN));
+      }
+
+      //pidCounter++;
+      modInc();
+    }
+
+    // Populate table with a set of processes
+    // ** I think get rid of this, start from nothing in the memory
+    // ** this is setupr
+    // ** >>>>>>>
+
+    public void populateTable(ArrayList<Process> processes){
         DefaultTableModel model = (DefaultTableModel) firstTable.getModel();
         firstTable.setModel(model);
-        // we need to know if we have to do all three of the drives, are we TLD - level == 0
-        // switch(level){}
-        // need arraylist of files and arraylist of FS's
-        files.stream().map((file) -> { // need to do this twice, this is the directories one
-            Object[] row = new Object[2];
-            row[0] = "File_" + String.valueOf(fi);// process.getPid // strings work
-            fi++;
-
-            //if(process.getDrive() == Drive.C)
-            //    row[1] = -1;
-            // again, we care not about priority, we want this to be F1,F2,D1,D2 etc
-            //else row[1] = process.getPriority();
-
-
-            row[1] = d;
+        processes.stream().map((process) -> {
+            Object[] row = new Object[3];
+            row[0] = process.getPid();
+            //If reading off of blocked list, ignore priority
+            if(process.getStatus() == ProcessStatus.BLOCKED)
+                row[1] = -1;
+            else row[1] = process.getPriority();
+            row[2] = process.getStatus();
             return row;
         }).forEachOrdered((row) -> {
-            model.addRow(row);
+            model.addRow(row); // ** adding rows could use this method when expanding or shrinking
         });
-
-        di = 0;
-        fi = 0;
     }
 
     // Populates table with one process
 
-    public void populateTable(FileSystem process){
-        DefaultTableModel model = (DefaultTableModel) firstTable.getModel();
+    public void populateTable(Process process){
+        /* DefaultTableModel model = (DefaultTableModel) firstTable.getModel();
         firstTable.setModel(model);
         Object[] row = new Object[3];
         row[0] = process.getPid();
         row[1] = "Running";
-        row[2] = process.getDrive();
-        model.addRow(row);
+        row[2] = process.getStatus();
+        model.addRow(row);*/
     }
 
-// Draw the table from  lists.
-// Tear this shit apart, it needs to draw some directories and files
+    // Draw the table from lists.
+
     public void drawTable(){
         if(running != null){
-            //populateTable(running);
-            Collections.sort(ready);
-            // we now need to call this with current stuff
-            populateTableFiles(Adrive.getFiles(), Drive.A);
-            populateTable(Adrive.getDirs());//); ready); // just a fo now
-            /*
-            populateTableFiles(Bdrive.getFiles(), Drive.B);
-            populateTable(Bdrive.getDirs());//); ready); // just a fo now
-            populateTableFiles(Cdrive.getFiles(), Drive.C);
-            populateTable(Cdrive.getDirs());//); ready); // just a fo now
-            */
+            populateTable(running);
+            //** begin gutting
+
+            //Collections.sort(ready);
+
+            //**end gutting so far
+            populateTable(ready);
             populateTable(blocked);
         }
         else{
-            Collections.sort(ready);
+            // ** gutgutgut
+
+            //Collections.sort(ready);
+
+            // ** can't be sorting a link list
             populateTable(ready);
             populateTable(blocked);
         }
@@ -525,44 +652,27 @@ public class Dispatcher extends javax.swing.JFrame {
         drawTable();
     }
 
-    // Fills the sets with arbitrary initial values. >>>>>>
+    // Fills the sets with arbitrary initial values.
 
-    public void initialSet(){ // gut for instantiation of drives
-        // a Dog B town, how u been
-        Adrive.addFile("Print this file out");// "first file");
-        Adrive.addFile("second file");
-        //Adrive.addFile("third file");
-        //Adrive.addFile("third file");
-
-        Adrive.addDirectory(new FileSystem(Drive.A));
-        //Adrive.addDirectory(new FileSystem(Drive.A));
-        //Adrive.addDirectory(new FileSystem(Drive.A));
-
-
-        Bdrive.addFile("I'm a cool little file");
-        Bdrive.addDirectory(new FileSystem(Drive.B));
-
-        Cdrive.addFile("What will he write next?");
-        Cdrive.addDirectory(new FileSystem(Drive.C));
-
-        ready.add(new FileSystem(pidCounter, 20, Drive.B));
+    public void initialSet(){
+        ready.add(new Process(pidCounter, 20, ProcessStatus.TAKEN));
         ++pidCounter;
-        ready.add(new FileSystem(pidCounter, 43, Drive.B));
+        ready.add(new Process(pidCounter, 43, ProcessStatus.TAKEN));
         ++pidCounter;
-        ready.add(new FileSystem(pidCounter, 18, Drive.B));
+        ready.add(new Process(pidCounter, 18, ProcessStatus.TAKEN));
         ++pidCounter;
-        ready.add(new FileSystem(pidCounter, 34, Drive.B));
+        ready.add(new Process(pidCounter, 34, ProcessStatus.TAKEN));
         ++pidCounter;
     }
 
     // Switches the running process to the process on the Ready list with the highest priority unless the ready list is empty, in which case it returns null.
 
-    public FileSystem contextSwitch(){
+    public Process contextSwitch(){
         if (ready.size() > 0){
-            FileSystem newRunning = new FileSystem(ready.get(0));
-            newRunning.setDrive(Drive.A);
+            Process newRunning = new Process(ready.get(0));
+            newRunning.setStatus(ProcessStatus.FREE);
             if(running != null){
-                running.setDrive(Drive.C);
+                running.setStatus(ProcessStatus.BLOCKED);
                 blocked.add(running);
             }
             ready.remove(0);
@@ -570,27 +680,27 @@ public class Dispatcher extends javax.swing.JFrame {
         }
         else{
             if(running != null){
-                running.setDrive(Drive.C);
+                running.setStatus(ProcessStatus.BLOCKED);
                 blocked.add(running);
             }
             return null;
         }
     }
 
-    public FileSystem contextSwitch2(){ //for just context switching
+    public Process contextSwitch2(){ //for just context switching
         if (ready.size() > 0){
-            FileSystem newRunning = new FileSystem(ready.get(0));
-            newRunning.setDrive(Drive.A);
+            Process newRunning = new Process(ready.get(0));
+            newRunning.setStatus(ProcessStatus.FREE);
             ready.remove(0);
             if(running != null){
-                running.setDrive(Drive.B);
+                running.setStatus(ProcessStatus.TAKEN);
                 ready.add(running);
             }
             return newRunning;
         }
         else{
             if(running != null){
-                running.setDrive(Drive.C);
+                running.setStatus(ProcessStatus.BLOCKED);
                 blocked.add(running);
             }
             return null;
@@ -612,20 +722,20 @@ public class Dispatcher extends javax.swing.JFrame {
 
 
     // declaring my gui variables
-    private javax.swing.JButton processBlock;
+    //private javax.swing.JButton processBlock;
     private javax.swing.JLabel controlArea;
     private javax.swing.JButton exit;
-    private javax.swing.JButton endAll;
+    //private javax.swing.JButton endAll;
     private javax.swing.JButton processKill;
     private javax.swing.JLabel labelBig;
     private javax.swing.JTextField inputPriority;
     private javax.swing.JButton addproc;
     private javax.swing.JLabel procLabel;
-    private javax.swing.JButton reset;
+    //private javax.swing.JButton reset;
     private javax.swing.JScrollPane scroller;
     private javax.swing.JSeparator mySeperator;
     private javax.swing.JTable firstTable;
-    private javax.swing.JButton processUnblock;
+    //private javax.swing.JButton processUnblock;
     private javax.swing.JButton timeExceeded;
 
 }
